@@ -40,11 +40,31 @@ router.get('/view-users', async (req, res) => {
 //Read (one)
 router.get('/view-user/:id', async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM users WHERE user_id = ?', [req.params.id]);
+    const [rows] = await pool.query('SELECT * FROM users WHERE user_id = ?', [
+      req.params.id
+    ]);
     res.json({users: rows[0] || []});
   } catch (error) {
     res.status(500).json({error: error.message});
   }
 });
+
+//Update - specific update
+router.put('/update-user/:id', async (req, res) => {
+  const {first_name, last_name} = req.body;
+
+  try {
+    const [update_result] = await pool.query(
+      'UPDATE users set first_name = ?, last_name = ? WHERE user_id = 2',
+      [first_name, last_name]
+    );
+
+    res.json({id: update_result.insertId, first_name, last_name});
+  } catch (error) {
+    res.status(500).json({error: error.message});
+  }
+});
+
+
 
 export default router;
