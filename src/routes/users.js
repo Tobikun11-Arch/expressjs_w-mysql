@@ -27,11 +27,21 @@ router.post('/register', async (req, res) => {
   }
 });
 
-//Read
+//Read (all)
 router.get('/view-users', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM users');
     res.json({users: rows});
+  } catch (error) {
+    res.status(500).json({error: error.message});
+  }
+});
+
+//Read (one)
+router.get('/view-user/:id', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM users WHERE user_id = ?', [req.params.id]);
+    res.json({users: rows[0] || []});
   } catch (error) {
     res.status(500).json({error: error.message});
   }
