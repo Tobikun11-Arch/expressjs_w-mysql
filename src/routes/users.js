@@ -10,13 +10,13 @@ router.post('/', async (req, res) => {
   const {first_name, last_name, email, password} = req.body;
 
   try {
-    const [post_result] = await pool.query(
+    const [result] = await pool.query(
       'INSERT INTO users (first_name, last_name, email, password) values (?, ?, ?, ?)',
       [first_name, last_name, email, password]
     );
 
     res.status(201).json({
-      id: post_result.insertId,
+      id: result.insertId,
       first_name,
       last_name,
       email,
@@ -44,8 +44,8 @@ router.get('/:id', async (req, res) => {
       req.params.id
     ]);
 
-    if(rows.length === 0) {
-      return res.status(404).json({message: "User not found!"})
+    if (rows.length === 0) {
+      return res.status(404).json({message: 'User not found!'});
     }
 
     res.status(200).json(rows[0]);
@@ -54,7 +54,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// PATCH - update specific fields only
+// PATCH - update specific fields (not required to update all fields)
 router.patch('/:id', async (req, res) => {
   const fields = [];
   const values = [];
@@ -79,12 +79,38 @@ router.patch('/:id', async (req, res) => {
       return res.status(404).json({message: 'User not found!'});
     }
 
-    res.status(200).json({message: 'user updated successfully'});
+    res.status(200).json({message: 'User updated successfully'});
   } catch (error) {
     res.status(500).json({error: error.message});
   }
 });
 
-// PUT - If replacing everything (expect complete data)
+// PUT - replacing everything (expect complete data that match in database)
+router.put('/:id', async (req, res) => {
+  const {first_name, last_name, email, password} = req.body;
+  try {
+    if(!first_name || !last_name || !email || !password) {
+      return res.status(400).json({message: "Missing required fields"})
+    }
+
+    const [result] = await pool.query(
+      'UPDATE users SET first_name = ?, last_name = ?, email = ?, password = ? WHERE user_id = ?',
+      [first_name, last_name, email, password, req.params.id]
+    );
+
+    if(result.affectedRows === 0) {
+      return res.status(404).json({message: "User not found"})
+    }
+
+    res.status(200).json({message: "User updated successfully"})
+  } catch (error) {
+    res.status(500).json({message: error.message})
+  }
+})
+
+
+
+
+
 
 export default router;
