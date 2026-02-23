@@ -6,7 +6,7 @@ const router = express.Router();
 //#1 CRUD to mysql
 
 //Create
-router.post('/register', async (req, res) => {
+router.post('/', async (req, res) => {
   const {first_name, last_name, email, password} = req.body;
 
   try {
@@ -28,7 +28,7 @@ router.post('/register', async (req, res) => {
 });
 
 //Read (all)
-router.get('/view-users', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM users');
     res.status(200).json({users: rows});
@@ -38,62 +38,53 @@ router.get('/view-users', async (req, res) => {
 });
 
 //Read (one)
-router.get('/view-user/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM users WHERE user_id = ?', [
       req.params.id
     ]);
-    res.status(200).json({users: rows[0] || []});
+
+    if(rows.length === 0) {
+      return res.status(404).json({message: "User not found!"})
+    }
+
+    res.status(200).json(rows[0]);
   } catch (error) {
     res.status(500).json({error: error.message});
   }
 });
 
-// PUT - full update
-router.put('/update-user/:id', async (req, res) => {
-  const {first_name, last_name} = req.body;
-
-  try {
-    const [update_result] = await pool.query(
-      'UPDATE users SET first_name = ?, last_name = ? WHERE user_id = 2',
-      [first_name, last_name]
-    );
-
-    res.status(200).json({message: "User updated successfully"});
-  } catch (error) {
-    res.status(500).json({error: error.message});
-  }
-});
-
-// PATCH - partial update
-router.patch('/update-changes/:id', async (req, res) => {
-  const fields = []
-  const values = []
+// PATCH - update specific fields only
+router.patch('/:id', async (req, res) => {
+  const fields = [];
+  const values = [];
+  const allowedFields = ['first_name', 'last_name', 'email', 'password'];
 
   Object.entries(req.body).forEach(([key, value]) => {
-    fields.push(`${key} = ?`),
-    values.push(value)
-  })
+    if (!allowedFields.includes(key)) return;
+    fields.push(`${key} = ?`), values.push(value);
+  });
 
-  if(fields.length === 0) {
-    return res.status(400).json({message: "No fields updates"})
+  if (fields.length === 0) {
+    return res.status(400).json({message: 'No valid fields to updates'});
   }
 
   try {
     const [result] = await pool.query(
       `UPDATE users SET ${fields.join(', ')} WHERE user_id = ?`,
       [...values, req.params.id]
-    )
+    );
 
-    if(result.affectedRows === 0) {
-      return res.status(404).json({message: "User not found!"})
+    if (result.affectedRows === 0) {
+      return res.status(404).json({message: 'User not found!'});
     }
 
-    res.status(200).json({message: "user updated successfully"})
-
+    res.status(200).json({message: 'user updated successfully'});
   } catch (error) {
-    res.status(500).json({error: error.message})
+    res.status(500).json({error: error.message});
   }
 });
+
+// PUT - If replacing everything (expect complete data)
 
 export default router;
